@@ -18,7 +18,9 @@
                     "class":"%logger{36}",
                     "thread":"%thread",
                     "message": "%message",
-                    "requestId": "%X{X-Request-ID}"
+                    "requestId": "%X{X-Request-ID}",
+                    "traceId": "%X{traceId:-}",
+                    "spanId": "%X{spanId:-}"
                     }
                 </pattern>
             </message>
@@ -27,7 +29,7 @@
 
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-            <pattern>%d{yyyy-MM-dd HH:mm:ss} %-5level %logger{36} - %msg%n</pattern>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss} %-5level %logger{36} - %msg%n - %X{traceId:-},%X{spanId:-}</pattern>
         </encoder>
     </appender>
 

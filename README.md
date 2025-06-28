@@ -174,3 +174,48 @@ scrape_configs:
 ```
 5. With the docker-compose.yml configuration on point 4 it's not necessary anymore to add the manually the datasource. Otherwise, Add Prometheus as a Datasource in Grafana in `Connections > DataSources`. Prometheus is running on http://prometheus:9090
 6. Now it's time to use `PromQL` to build Dashboards. For example, to reveal the avg response time of HTTP requests, we would use a query like `rate(http_server_requests_seconds_sum[5m]) / rate(http_server_requests_seconds_count[5m])`
+7. Now added distributed tracing, so for checking traces and spans, visit http://localhost:16686/search
+
+# Adding Distributed Tracing
+# Dependencies
+```xml
+<dependency>
+	<groupId>io.micrometer</groupId>
+	<artifactId>micrometer-tracing-bridge-otel</artifactId>
+</dependency>
+<dependency>
+	<groupId>io.opentelemetry</groupId>
+	<artifactId>opentelemetry-exporter-otlp</artifactId>
+</dependency>
+```
+
+# Docker-compose service
+```yaml
+jaeger:
+    image: jaegertracing/all-in-one:1.70.0
+    ports:
+      - "16686:16686"
+      - "4318:4318"
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+```
+
+# application.properties
+```
+tracing.url=http://localhost:4318/v1/traces
+management.tracing.sampling.probability=1.0
+spring.kafka.template.observation-enabled=true # for producers
+spring.kafka.listener.observation-enabled=true # for consumers
+logging.pattern.level="%5p [${spring.application.name:},%X{traceId:-},%X{spanId:-}]" # just to able to log the traces and spans
+```
+
+# Spring configuration to export the logs
+```java
+@Configuration
+public class OtlpConfiguration {
+    @Bean
+    OtlpHttpSpanExporter otlpHttpSpanExporter(@Value("${tracing.url}") String url) {
+        return OtlpHttpSpanExporter.builder().setEndpoint(url).build();
+    }
+}
+```
